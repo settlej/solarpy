@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 
 import socket
-import threading
 import subprocess
 import time
 import os
 import sys
 import shutil
 
+#########################################################################
+#
+#   Author:  Joshua Settle
+#   Info:    Programmed in python3 without third party modules.
+#            Works on both Windows and Linux python3.
+#   Purpose: Needed effective light weight program to monitor
+#            device availaiblity.
+#   License: MIT 
+# 
+#########################################################################  
 
 class ping_device():
     def __init__(self, ip, dns=None, column=None, row=None, status=None):
         self.ip = ip
-       # self.dns = dns
         if dns == '' or dns == None:
             self.dns = ip
         else:
@@ -90,24 +98,6 @@ class TerminalResize(Exception):
     """Terminal Resized"""
     pass
 
-
-
-#def restart():
-#    while True:
-#        if msvcrt.kbhit():
-#            key = msvcrt.getch()
-#            #print('hi')
-#            if key == chr(32):
-#                print('hasdfasdfasdf')
-#                raise TerminalResize   # just to show the result
-#
-#
-#t = threading.Thread(target=restart)
-#t.daemon = True
-#t.start()
-
-
-
 if __name__ == '__main__':
     timeinterval = None
     if len(sys.argv) > 1:
@@ -130,22 +120,7 @@ if __name__ == '__main__':
             if not timeinterval.isdigit():
                 print('Invalid Option argument, needs to be a number')
                 sys.exit()
-        #elif all('-name' in sys.argv, '-t' in sys.argv, len(sys.argv) == 3):
-        #    t_location = sys.argv.index('-t')
-        #    if not sys.argv[t_location + 1].isdigit():
-        #        print('Invalid Option argument, needs to be a number')
-        #        sys.exit()        
-        #elif not sys.argv[1] == '-t':
-        #    print('Invalid Option use "-t or -name or -h"')
-        #    sys.exit()
-        #elif sys.argv[1] == '-t' and len(sys.argv) > 2:
-        #    if not sys.argv[2].isdigit():
-        #        print('Invalid Option argument, needs to be a number')
-        #        sys.exit()
-        #elif sys.argv[1] == '-t' and len(sys.argv) == 2:
-        #    print('Invalid Option argument, needs to have a number')
-        #    sys.exit()
-    
+
     clear_screen()
     print('Starting...')
 
