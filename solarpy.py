@@ -50,9 +50,9 @@ def do_pings(devicesobjects, amount=2, timeout=1):
     localdeviceslist = []
     for dev in devicesobjects:
         if os.name == 'posix':
-            proc = subprocess.Popen('ping {} -c {} -W {}'.format(dev.ip, amount, timeout),shell=True, stdout=subprocess.PIPE)
+            proc = subprocess.Popen('ping {} -c {} -W {}'.format(dev.ip, amount, timeout),shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         else:
-            proc = subprocess.Popen('ping {} -n {} -w {}'.format(dev.ip, amount, timeout), stdout=subprocess.PIPE)
+            proc = subprocess.Popen('ping {} -n {} -w {}'.format(dev.ip, amount, timeout), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         processlist.append(proc)
     for num,process in enumerate(processlist):
         process.wait()
