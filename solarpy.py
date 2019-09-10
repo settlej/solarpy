@@ -18,7 +18,7 @@ import shutil
 # 
 #########################################################################  
 
-class ping_device():
+class pingable_device():
     def __init__(self, ip, dns=None, column=None, row=None, status=None):
         self.ip = ip
         if dns == '' or dns == None:
@@ -41,7 +41,7 @@ def clear_screen():
 def createalldeviceobjects(alldeviesdict):
     localdeviceslist = []
     for devip, devname in alldeviesdict.items():
-        localdeviceslist.append(ping_device(ip=devip, dns=devname))
+        localdeviceslist.append(pingable_device(ip=devip, dns=devname))
     return localdeviceslist
 
 def do_pings(devicesobjects, amount=2, timeout=1):
@@ -122,7 +122,7 @@ if __name__ == '__main__':
                 sys.exit()
 
     clear_screen()
-    print('Starting...')
+    print(' Starting...')
 
     alldeviesdict = {
         '8.8.8.8': 'a',
@@ -168,9 +168,8 @@ if __name__ == '__main__':
     devices_APIC = []
     devices_leafs = []
     devices_dmvpn = []
-    devices_ise = []
+    devices_ISE = []
     devices_Important_servers = []
-    devices_Routers = []
     
     a = time.time()
     deviceobjects = createalldeviceobjects(alldeviesdict)
@@ -193,7 +192,7 @@ if __name__ == '__main__':
                 '98.137.246.8',
                 '98.138.219.231'
                 ]:
-            devices_ise.append(devobject)
+            devices_ISE.append(devobject)
         elif devobject.ip in [
                 '13.107.21.200',
                 '204.79.197.200',
@@ -233,20 +232,20 @@ if __name__ == '__main__':
     while True:
         try:
             x = 2 
-            y = 1
+            y = 2
             print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'APIC'))
             y += 1
             deviceobjects,y = terminalgrouping(devices_APIC,deviceobjects, x, y)
         
             y += 2
-            print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'ISE'))
-            y += 1    
-            deviceobjects,y = terminalgrouping(devices_ise,deviceobjects, x, y)
-
-            y += 2
             print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'Leaf'))
             y += 1
             deviceobjects,y = terminalgrouping(devices_leafs,deviceobjects, x, y)
+
+            y += 2
+            print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'ISE'))
+            y += 1    
+            deviceobjects,y = terminalgrouping(devices_ISE,deviceobjects, x, y)
             
             y += 2
             print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'DMVPN')) 
@@ -267,11 +266,6 @@ if __name__ == '__main__':
             print(' Uptime: {}\n Refresh Count: {}\n Refresh Interval: {} sec'.format(round(b-a, 2), int(counter), speed))
             counter += 1
             
-            if terminalsize != shutil.get_terminal_size((80,20)):
-                terminalsize = shutil.get_terminal_size((80,20))
-                clear_screen()
-                continue
-    
             progressbar = 1
             bottomline = terminalsize.lines
             
@@ -286,7 +280,7 @@ if __name__ == '__main__':
                 time.sleep(1)
                 progressbar +=1
                 if progressbar == speed and speed > 2:
-                    if terminalsize.lines < y + 3:
+                    if terminalsize.lines > y + 3:
                         print(stringa % ('='*(s+2), percentage(progressbar, speed)))
     
             deviceobjects = do_pings(deviceobjects)
