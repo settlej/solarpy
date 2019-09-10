@@ -134,7 +134,6 @@ if __name__ == '__main__':
         '1.1.1.1': 'g',
         '2.2.2.2': 'a',
         '2.2.2.4': 'a',
-        '8.8.8.8': 'a',
         '4.4.4.4': 'a',
         '98.138.219.232': 'a',
         '72.30.35.9': 'a',
@@ -234,7 +233,7 @@ if __name__ == '__main__':
     while True:
         try:
             x = 2 
-            y = 2
+            y = 1
             print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'APIC'))
             y += 1
             deviceobjects,y = terminalgrouping(devices_APIC,deviceobjects, x, y)
@@ -260,13 +259,11 @@ if __name__ == '__main__':
             deviceobjects,y = terminalgrouping(devices_Important_servers,deviceobjects, x, y)
             y += 2
             if timeinterval:
-                #print(t_location)
                 speed = int(timeinterval)
             else:
                 speed = 5
             b = time.time()
-
-            print('\n\n')
+            print('\x1b[{};{}H'.format(y,x))
             print(' Uptime: {}\n Refresh Count: {}\n Refresh Interval: {} sec'.format(round(b-a, 2), int(counter), speed))
             counter += 1
             
@@ -280,15 +277,17 @@ if __name__ == '__main__':
             
             for s in range(speed-1):
                 if speed > 2:
-                    stringa = " \x1b[{};1H [%-{}s] %d%%   \x1b[?25l".format(y,speed)
-                    print(stringa % ('='*(s+1), percentage(progressbar, speed)))
+                    if terminalsize.lines > y + 3:
+                        stringa = " \x1b[{};1H [%-{}s] %d%%   \x1b[?25l".format(y,speed)
+                        print(stringa % ('='*(s+1), percentage(progressbar, speed)))
                 if terminalsize != shutil.get_terminal_size((80,20)):
                     terminalsize = shutil.get_terminal_size((80,20))
                     raise TerminalResize
                 time.sleep(1)
                 progressbar +=1
                 if progressbar == speed and speed > 2:
-                    print(stringa % ('='*(s+2), percentage(progressbar, speed)))
+                    if terminalsize.lines < y + 3:
+                        print(stringa % ('='*(s+2), percentage(progressbar, speed)))
     
             deviceobjects = do_pings(deviceobjects)
             
