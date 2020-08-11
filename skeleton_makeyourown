@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+
+#import socket
+import subprocess
+import time
+import os
+import sys
+import shutil
+
+#########################################################################
+#
+#   Author:  Joshua Settle
+#   Info:    Programmed in python3 without third party modules.
+#            Works on both Windows and Linux python3.
+#   Purpose: Needed effective light weight program to monitor
+#            device availaiblity.
+#   License: MIT 
+# 
+#########################################################################  
+
+class pingable_device():
+    def __init__(self, ip, dns=None, column=None, row=None, status=None):
+        self.ip = ip
+        if dns == '' or dns == None:
+            self.dns = ip
+        else:
+            self.dns = dns
+        self.column = column
+        self.row = row
+        self.status = status
+    def __repr__(self):
+        return self.ip
+ 
+def clear_screen():
+    if os.name == 'posix':
+        os.system('clear')
+    else:
+        os.system('cls')
+
+
+def createalldeviceobjects(alldeviesdict):
+    localdevicelist = []
+    for devip, devname in alldeviesdict.items():
+        localdevicelist.append(pingable_device(ip=devip, dns=devname))
+    return localdevicelist
+
+def do_pings(devicesobjects, amount=2, timeout=1):
+    returnlist = []
+    processlist = []
+    localdevicelist = []
+    for dev in devicesobjects:
+        if os.name == 'posix':
+            proc = subprocess.Popen('ping {} -c {} -W {}'.format(dev.ip, amount, timeout),shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        else:
+            proc = subprocess.Popen('ping {} -n {} -w {}'.format(dev.ip, amount, timeout), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        processlist.append(proc)
+    for num,process in enumerate(processlist):
+        process.wait()
+        result = (process.communicate())
+        if '-both' in sys.argv:
+            displayname = devicesobjects[num].dns[0] + '_' + devicesobjects[num].ip
+        elif '-name' in sys.argv:
+            displayname = devicesobjects[num].dns[0]
+        else:
+            displayname = devicesobjects[num].ip
+        if os.name == 'posix':
+            if r"100% packet loss" in str(result):
+                devicesobjects[num].status = '\x1b[1;31;40m{:30}\x1b[0m'.format(displayname[:30]) 
+            else:
+                devicesobjects[num].status = '\x1b[1;32;40m{:30}\x1b[0m'.format(displayname[:30])            
+        else:
+            if r"(100% loss)" in str(result):
+                devicesobjects[num].status = '\x1b[1;31;40m{:30}\x1b[0m'.format(displayname[:30]) 
+            else:
+                devicesobjects[num].status = '\x1b[1;32;40m{:30}\x1b[0m'.format(displayname[:30])
+    return devicesobjects
+    
+def terminalgrouping(grouplist,devicelist, x, y):
+    ping_icons = ""
+    for dev in sorted(grouplist, key=lambda a: (a.status, a.ip)):
+        dev.column = x
+        dev.row = y
+        if '-both' in sys.argv:
+            x += 31
+            if x > 94:
+                y += 1
+                x = 2
+        else:
+            x += 21
+            if x > 64:
+                y += 1
+                x = 2
+    for item in grouplist:
+        ping_icons += '\x1b[{};{}H{}\x1b[0m'.format( item.row,item.column,item.status)
+    return devicelist, y, ping_icons
+
+def percentage(part, whole):
+  return 100 * float(part)/float(whole)
+
+
+class TerminalResize(Exception):
+    """Terminal Resized"""
+    pass
+
+def resize_terminal():
+    if '-both' in sys.argv:
+        os.system("mode con: cols=94 lines=30".format(bottomline))
+    else:
+        os.system("mode con: cols=58 lines=30".format(bottomline))
+
+if __name__ == '__main__':
+    timeinterval = None
+    if len(sys.argv) > 1:
+        try:
+            t_location = sys.argv.index('-t')
+            timeinterval = sys.argv[t_location + 1]
+        except IndexError:
+            print('Invalid Option argument, needs to have a number')
+            sys.exit()
+        except ValueError or NameError:
+            timeinterval = None
+        if '-h' in sys.argv:
+            print('Usage: solary.py [-t refresh_time_interval] [-name]\n' + 
+                   '\t(10 sec) Example: solar.py -t 10 ' + 
+                   '\n\t*Default time is 5 sec')
+            sys.exit()
+        if ('-name' in sys.argv or '-both' in sys.argv) and not '-t' in sys.argv:
+            pass
+        elif all(('-name' in sys.argv, '-t' in sys.argv, len(sys.argv) > 3)):
+            if not timeinterval.isdigit():
+                print('Invalid Option argument, needs to be a number')
+                sys.exit()
+
+    clear_screen()
+    print(' Starting...')
+
+    alldeviesdict = {
+        '172.16.253.2': ('1DMVPN', 'group-4'),
+        '172.16.253.5': ('2DMVPN', 'group-4'),
+        '172.16.253.12': ('3DMPVN', 'group-4'),
+        '172.16.253.13': ('4DMPVN', 'group-4'),
+        '172.16.253.14': ('5DMPVN', 'group-4'),
+        '1.1.11.130': ('A01', 'group-1'),
+        '1.1.11.131': ('A02', 'group-1'),
+        '1.1.11.132': ('A03', 'group-1'),
+        '1.1.18.115': ('I01', 'group-2'),
+        '1.1.18.116': ('I02', 'group-2'),
+        '1.1.18.117': ('I03', 'group-2'),
+        '1.1.18.118': ('I04', 'group-2'),
+        '1.1.18.119': ('I05', 'group-2'),
+        '1.1.18.120': ('I06', 'group-2'),
+        '1.1.11.133': ('L01', 'group-3'),
+        '1.1.11.134': ('L02', 'group-3'),
+        '1.1.16.27': ('L01<-2', 'group-3'),
+        '1.1.16.28': ('L02<-2', 'group-3'),
+        '1.1.1.20': ('D', 'group-5'),
+        '1.1.1.11': ('DNS01', 'group-5'),
+        '1.1.1.12': ('DNS02', 'group-5'),
+        '1.1.1.13': ('DNS03', 'group-5'),
+        '1.1.12.41': ('san01', 'group-5'),
+        '1.1.12.42': ('san02', 'group-5'),
+        '1.1.12.43': ('san03', 'group-5'),
+        '1.1.12.44': ('san04', 'group-5'),
+        '1.1.12.45': ('san05', 'group-5'),
+        '1.1.12.46': ('san06', 'group-5')
+        }
+    
+    alldeviesdict = alldeviesdict
+    devices_GROUP1 = []
+    devices_GROUP2 = []
+    devices_dmvpn = []
+    devices_GROUP3 = []
+    devices_Important_servers = []
+    
+    a = time.time()
+    deviceobjects = createalldeviceobjects(alldeviesdict)
+    deviceobjects = do_pings(deviceobjects, amount=2)
+   
+    for devobject in deviceobjects:
+        if 'group-1' in alldeviesdict[devobject.ip][1]:
+            devices_GROUP1.append(devobject)
+        elif 'group-2' in alldeviesdict[devobject.ip][1]:
+            devices_GROUP3.append(devobject)
+        elif 'group-3' in alldeviesdict[devobject.ip][1]:
+            devices_GROUP2.append(devobject)
+        elif 'group-4' in alldeviesdict[devobject.ip][1]:
+            devices_dmvpn.append(devobject)
+        elif 'group-5' in alldeviesdict[devobject.ip][1]:
+            devices_Important_servers.append(devobject)
+
+    clear_screen()
+    
+    counter = 1
+    first_load = 1
+    while True:
+        try:
+            x = 2 
+            y = 2
+            print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'GROUP1'))
+            y += 1
+            deviceobjects,y, ping_icons1 = terminalgrouping(devices_GROUP1,deviceobjects, x, y)
+        
+            y += 2
+            print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'GROUP2'))
+            y += 1
+            deviceobjects,y,ping_icons2 = terminalgrouping(devices_GROUP2,deviceobjects, x, y)
+
+            y += 2
+            print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'GROUP3'))
+            y += 1    
+            deviceobjects,y,ping_icons3 = terminalgrouping(devices_GROUP3,deviceobjects, x, y)
+            
+            y += 2
+            print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'DMVPN')) 
+            y += 1
+            deviceobjects,y,ping_icons4 = terminalgrouping(devices_dmvpn,deviceobjects, x, y)
+            
+            y += 2
+            print('\x1b[{};{}H\x1b[1;37;40m{:-^57}\x1b[0m'.format(y,x,'SERVERS')) 
+            y += 1
+            deviceobjects,y,ping_icons5 = terminalgrouping(devices_Important_servers,deviceobjects, x, y)
+            y += 2
+            if timeinterval:
+                speed = int(timeinterval)
+            else:
+                speed = 5
+            b = time.time()
+            if first_load:
+                terminalsize = shutil.get_terminal_size((80,20))
+                bottomline = terminalsize.lines
+                resize_terminal()
+                #terminalsize = shutil.get_terminal_size((80,20))
+                #bottomline = terminalsize.lines
+                first_load = 0
+            print(ping_icons1,ping_icons2,ping_icons3,ping_icons4,ping_icons5)
+            print('\x1b[{};{}H'.format(y,x))
+            print(' Uptime: {}\n Refresh Count: {}\n Refresh Interval: {} sec'.format(round(b-a, 2), int(counter), speed))
+            counter += 1
+            
+            progressbar = 1
+
+            for s in range(speed-1):
+                if speed > 2:
+                    if terminalsize.lines > y + 3:
+                        stringa = " \x1b[{};1H [%-{}s] %d%%   \x1b[?25l".format(y,speed)
+                        print(stringa % ('='*(s+1), percentage(progressbar, speed)))
+                if terminalsize != shutil.get_terminal_size((80,20)):
+                    terminalsize = shutil.get_terminal_size((80,20))
+                    raGROUP3 TerminalResize
+                time.sleep(1)
+                progressbar +=1
+                if progressbar == speed and speed > 2:
+                    if terminalsize.lines > y + 3:
+                        print(stringa % ('='*(s+2), percentage(progressbar, speed)))
+    
+            deviceobjects = do_pings(deviceobjects)
+             
+        except TerminalResize:
+            print('\x1b[?25l ')
+            clear_screen()
+            continue
+        except KeyboardInterrupt:
+            print('\x1b[8')
+            print('\x1b[?25h')
+            print('\n\n Ending Program....')
+            sys.exit()
+        except Exception as e:
+            print(e)
+            input('a')
